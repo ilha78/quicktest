@@ -1,0 +1,65 @@
+#!/bin/dash
+
+# This will show the list of all submissions as 
+# specified by <zid>
+
+PATH="$PATH:$(pwd)"
+
+# NOTE: this file contains all helper functions
+# which are used across different give scripts
+. helpers.sh
+
+give_not_exist "give-status"
+
+# check num args 
+if [ $# -ne 1 ]; then
+    echo "usage: give-status <zid>" >&2
+    exit 1
+fi
+
+zid="$1"
+
+# check invalid zid
+if ! echo "$zid" | grep -E '^z[0-9]{7}$' >/dev/null; then
+    echo "give-status: invalid zid: $zid" >&2
+    exit 1
+fi
+
+zid_match=0
+for assignment in .give/*; do
+    # check no assignments
+    if ! [ -d "$assignment" ]; then
+        echo "no submissions for $zid"
+        exit 0
+    fi
+    assignment_name="$(echo "$assignment" | cut -d '/' -f2,2)"
+    student="$(find "$assignment" -mindepth 1 -maxdepth 1 -type d | grep -E "$zid")" 2>/dev/null
+    # if no student could be found then iterate to the next assignment
+    if [ $? -eq 1 ]; then
+        continue
+    fi    
+    zid_match=1
+    submissions="$(find "$student" -mindepth 1 -maxdepth 1 -type d | sort -n)" 2>/dev/null
+    num_submissions="$(find "$student" -mindepth 1 -maxdepth 1 -type d | wc -l)" 2>/dev/null
+    echo "* $num_submissions submissions for $assignment_name"
+
+    for submission in $submissions; do
+        # submission_num="$(echo "$submission"|rev|cut -d '/' -f1,1)"
+        submission_num="$(echo "$submission" | cut -d '/' -f4,4)"
+
+        # find the submitted file that is not TIMESTAMP
+        file="$(find "$submission" -mindepth 1 -maxdepth 1|grep -Ev '@TIMESTAMP')" 2>/dev/null       
+        filename="$(echo "$file" | cut -d '/' -f5,5)"
+        file_size="$(wc -c "$file" | cut -d ' ' -f1,1)"
+
+        # find the TIMESTAMP
+        timestamp="$(find "$submission" -mindepth 1 -maxdepth 1|grep -E '@TIMESTAMP')" 2>/dev/null
+        print_timestamp="$(cat "$timestamp")"
+        echo "submission $submission_num: $filename $file_size bytes @ $print_timestamp"
+    done
+done
+
+# no matching zid for all assignments
+if [ "$zid_match" -eq 0 ]; then
+    echo "no submissions for $zid"
+fi

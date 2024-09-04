@@ -1,0 +1,192 @@
+#!/bin/dash
+
+# This is my implementation of automarking the output of
+# a student's most recent submission against the output of 
+# the solution of an <assignment> and assigns a mark
+
+PATH="$PATH:$(pwd)"
+
+# NOTE: this file contains all helper functions
+# which are used across different give scripts
+. helpers.sh
+
+# These are the elementary error checks before 
+# validity checks of _AUTOMARKING
+setup_error_checks() {
+    assignment="$1"
+    num_args="$2"
+    if [ "$num_args" -ne 1 ]; then
+        echo "usage: give-mark <assignment>" >&2
+        exit 1
+    fi
+    # check invalid assignment
+    if ! echo "$assignment"|grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
+        echo "give-mark: invalid assignment: $assignment" >&2
+        exit 1
+    fi
+
+    # check valid assignment directory
+    if ! [ -d ".give/$assignment" ]; then
+        echo "give-mark: assignment $assignment not found" >&2
+        exit 1
+    fi
+}
+
+# This function runs individual student's submission against
+# assignment's solution and works out the cumulative marks
+run_automarking() {
+    automarking="$1"
+    filename="$2"
+
+    # add extra backslashes
+    edit_automarking="$(mktemp)"
+    sed 's/\\/\\\\/g' "$automarking" > "$edit_automarking"
+    # from helpers.sh
+    # handles all errors relating to the contents of _AUTOMARKING
+    automarking_error_checks "$automarking" "$edit_automarking"
+
+    exp_stdout="$(mktemp)"
+    exp_stderr="$(mktemp)"
+    act_stdout="$(mktemp)"
+    act_stderr="$(mktemp)"
+
+    pass_count=0
+    fail_count=0
+    marks_tally=0
+    marks_total=0
+
+    # running _AUTOMARKING line by line
+    while read -r line; do
+        # if line is a comment or a comment then continue
+        if echo "$line"|grep -E '^#' >/dev/null || [ -z "$line" ]; then
+            continue
+        fi
+
+        label="$(echo "$line" | cut -d '|' -f1,1)"
+        arguments="$(echo "$line" | cut -d '|' -f2,2)"
+        stdin="$(echo "$line" | cut -d '|' -f3,3)"
+        options="$(echo "$line" | cut -d '|' -f4,4)"
+        marks="$(echo "$line" | cut -d '|' -f5,5)"
+        # remove leading zeroes
+        marks="$(echo "$marks" | sed -E 's/0+([1-9][0-9]*)/\1/')"
+        # expected solution
+        echo "$stdin" | ./"$solution" $arguments 1>"$exp_stdout" 2>"$exp_stderr"
+        exp_exit_status=$?
+
+        # actual (student) solution
+        echo "$stdin" | ./"$filename" $arguments 1>"$act_stdout" 2>"$act_stderr"
+        act_exit_status=$?
+
+        # configure options for diff
+        option_digit=0   
+        diff_options=""
+        if echo "$options" | grep -E 'c' >/dev/null; then
+            diff_options="$diff_options -i"
+        fi
+        if echo "$options" | grep -E 'b' >/dev/null; then
+            diff_options="$diff_options -B"
+        fi
+        if echo "$options" | grep -E 'w' >/dev/null; then
+            diff_options="$diff_options -w"
+        fi
+        if echo "$options" | grep -E 'd' >/dev/null; then
+            option_digit=1
+        fi
+
+        # assume outputs are all different
+        stdout_diff=1
+        stderr_diff=1
+        exit_status_diff=1
+
+        # from helpers.sh
+        # compare the stdout of expected to the stdout of actual
+        compare_outputs \
+            "$exp_stdout" \
+            "$act_stdout" \
+            "$diff_options" \
+            "$option_digit" \
+            "$label" \
+            "stdout" \
+            "$stdout_diff"
+        stdout_diff=$?
+
+        # from helpers.sh
+        # compare the stderr of expected to the stderr of actual
+        compare_outputs \
+            "$exp_stderr" \
+            "$act_stderr" \
+            "$diff_options" \
+            "$option_digit" \
+            "$label" \
+            "stderr" \
+            "$stdout_diff"
+        stderr_diff=$?
+
+        # compare exit status
+        if [ "$exp_exit_status" -eq "$act_exit_status" ]; then
+            exit_status_diff=0
+        else
+            echo "Exit status of $act_exit_status incorrect should be $exp_exit_status"
+        fi
+
+        # if all outputs were the same then add to tallying marks and count up the passes
+        if [ "$stdout_diff" -eq 0 ] && [ "$stderr_diff" -eq 0 ] && [ "$exit_status_diff" -eq 0 ]; then
+            echo "* Test $label passed ($marks marks)."
+            pass_count=$((pass_count+1))
+            marks_tally=$((marks_tally+marks))        
+        # otherwise, count up the fails
+        else
+            fail_count=$((fail_count+1))
+        fi
+        marks_total=$((marks_total+marks))
+
+    done < "$edit_automarking"
+
+    rm -f "$edit_automarking"
+    rm -f "$exp_stdout" "$act_stdout" "$exp_stderr" "$act_stderr"
+
+    # check if there were no tests at all
+    if [ "$pass_count" -eq 0 ] && [ "$fail_count" -eq 0 ]; then
+        echo "No automarking"
+    else
+        echo "** $pass_count tests passed, $fail_count tests failed - mark: $marks_tally/$marks_total"
+    fi
+}
+
+# Main function
+# from helpers.sh to check if .give exists or not
+give_not_exist "give-mark"
+
+assignment="$1"
+num_args="$#"
+setup_error_checks "$assignment" "$num_args"
+
+automarking="$(find ".give/$assignment" -mindepth 1 -maxdepth 1|grep -E "_AUTOMARKING")" 2>/dev/null
+solution="$(find ".give/$assignment/_SOLUTION" -mindepth 1 -maxdepth 1)" 2>/dev/null
+students="$(find ".give/$assignment" -mindepth 1 -maxdepth 1 -type d|grep -E 'z[0-9]{7}'|sort -n)" 2>/dev/null
+
+# find the most recent submission for each student in <assignment>
+echo "$students" | while read -r student; do
+    last_submission="$(find "$student" -mindepth 1 -maxdepth 1 -type d|sort -n|tail -1)" 2>/dev/null
+    submission_num="$(echo "$last_submission"|cut -d '/' -f4,4)" 
+    zid="$(echo "$student"|cut -d '/' -f3,3)"
+
+    # retrieve all file information
+    file="$(find "$last_submission" -mindepth 1 -maxdepth 1|grep -Ev '@TIMESTAMP')" 2>/dev/null
+    filename="$(echo "$file"|cut -d '/' -f5,5)"
+    file_size="$(wc -c "$file"|cut -d ' ' -f1,1)"
+    timestamp="$(find "$last_submission" -mindepth 1 -maxdepth 1|grep -E '@TIMESTAMP')" 2>/dev/null
+    print_timestamp="$(cat "$timestamp")"
+
+    echo "*** Student $zid - submission $submission_num: $filename $file_size bytes @ $print_timestamp"
+
+    # run the automarking for the most recent file of the student
+    run_automarking "$automarking" "$file"
+done
+
+exit 0
+
+
+
+
+
