@@ -4,7 +4,7 @@ This project was written using multiple bash scripts for a project.
 
 ## Setup
 
-Simply, clone the repository and in the cloned directory (where all the scripts are located), run `PATH="$PATH:$(pwd)"`.
+Clone this repository and in the cloned directory (where all the scripts are located), run `PATH="$PATH:$(pwd)"`.
 
 ## Important notes
 
