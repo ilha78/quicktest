@@ -4,7 +4,7 @@ This project was written using bash.
 
 ## Setup
 
-Clone this repository and in the cloned directory (where all the scripts are located), run `PATH="$PATH:$(pwd)"`.
+Clone this repository and in the cloned directory (where all the scripts are located), run `PATH="$PATH:$(pwd)"`. Make sure you are on a Linux environment!
 
 ## Important notes
 
