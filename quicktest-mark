@@ -28,7 +28,7 @@ setup_error_checks() {
     fi
 }
 
-# This function runs individual version's submission against
+# This function runs individual user's submission against
 # assignment's solution and works out the cumulative marks
 run_automarking() {
     automarking="$1"
@@ -69,7 +69,7 @@ run_automarking() {
         echo "$stdin" | ./"$solution" $arguments 1>"$exp_stdout" 2>"$exp_stderr"
         exp_exit_status=$?
 
-        # actual (version) solution
+        # actual (user) solution
         echo "$stdin" | ./"$filename" $arguments 1>"$act_stdout" 2>"$act_stderr"
         act_exit_status=$?
 
@@ -159,13 +159,12 @@ setup_error_checks "$assignment" "$num_args"
 
 automarking="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1|grep -E "_AUTOMARKING")" 2>/dev/null
 solution="$(find ".quicktest/$assignment/_SOLUTION" -mindepth 1 -maxdepth 1)" 2>/dev/null
-versions="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1 -type d|grep -E 'z[0-9]{7}'|sort -n)" 2>/dev/null
+users="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1 -type d|cut -d '/' -f3,3|grep -E '^[^_]'|sort -n)" 2>/dev/null
 
-# find the most recent submission for each version in <assignment>
-echo "$versions" | while read -r version; do
-    last_submission="$(find "$version" -mindepth 1 -maxdepth 1 -type d|sort -n|tail -1)" 2>/dev/null
+# find the most recent submission for each user in <assignment>
+echo "$users" | while read -r user; do
+    last_submission="$(find ".quicktest/$assignment/$user" -mindepth 1 -maxdepth 1 -type d|sort -n|tail -1)" 2>/dev/null
     submission_num="$(echo "$last_submission"|cut -d '/' -f4,4)" 
-    id="$(echo "$version"|cut -d '/' -f3,3)"
 
     # retrieve all file information
     file="$(find "$last_submission" -mindepth 1 -maxdepth 1|grep -Ev '@TIMESTAMP')" 2>/dev/null
@@ -174,9 +173,9 @@ echo "$versions" | while read -r version; do
     timestamp="$(find "$last_submission" -mindepth 1 -maxdepth 1|grep -E '@TIMESTAMP')" 2>/dev/null
     print_timestamp="$(cat "$timestamp")"
 
-    echo "*** version $id - submission $submission_num: $filename $file_size bytes @ $print_timestamp"
+    echo "*** user $user - submission $submission_num: $filename $file_size bytes @ $print_timestamp"
 
-    # run the automarking for the most recent file of the version
+    # run the automarking for the most recent file of the user
     run_automarking "$automarking" "$file"
 done
 

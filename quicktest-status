@@ -10,35 +10,35 @@ quicktest_not_exist "quicktest-status"
 
 # check num args 
 if [ $# -ne 1 ]; then
-    echo "usage: quicktest-status <id>" >&2
+    echo "usage: quicktest-status <user>" >&2
     exit 1
 fi
 
-id="$1"
+user="$1"
 
-# check invalid id
-if ! echo "$id" | grep -E '^z[0-9]{7}$' >/dev/null; then
-    echo "quicktest-status: invalid id: $id" >&2
+# check invalid user
+if ! echo "$user" | grep -E "^[^_].*" >/dev/null; then
+    echo "quicktest-status: invalid user: $user" >&2
     exit 1
 fi
 
-id_match=0
-for assignment in .quicktest/*; do
-    # check no assignments
-    if ! [ -d "$assignment" ]; then
-        echo "no submissions for $id"
+user_match=0
+for project in .quicktest/*; do
+    # check no projects
+    if ! [ -d "$project" ]; then
+        echo "no submissions for $user"
         exit 0
     fi
-    assignment_name="$(echo "$assignment" | cut -d '/' -f2,2)"
-    version="$(find "$assignment" -mindepth 1 -maxdepth 1 -type d | grep -E "$id")" 2>/dev/null
-    # if no version could be found then iterate to the next assignment
+    project_name="$(echo "$project" | cut -d '/' -f2,2)"
+    user="$(find "$project" -mindepth 1 -maxdepth 1 -type d | grep -E "$user")" 2>/dev/null
+    # if no user could be found then iterate to the next project
     if [ $? -eq 1 ]; then
         continue
     fi    
-    id_match=1
-    submissions="$(find "$version" -mindepth 1 -maxdepth 1 -type d | sort -n)" 2>/dev/null
-    num_submissions="$(find "$version" -mindepth 1 -maxdepth 1 -type d | wc -l)" 2>/dev/null
-    echo "* $num_submissions submissions for $assignment_name"
+    user_match=1
+    submissions="$(find "$user" -mindepth 1 -maxdepth 1 -type d | sort -n)" 2>/dev/null
+    num_submissions="$(find "$user" -mindepth 1 -maxdepth 1 -type d | wc -l)" 2>/dev/null
+    echo "* $num_submissions submissions for $project_name"
 
     for submission in $submissions; do
         # submission_num="$(echo "$submission"|rev|cut -d '/' -f1,1)"
@@ -56,7 +56,7 @@ for assignment in .quicktest/*; do
     done
 done
 
-# no matching id for all assignments
-if [ "$id_match" -eq 0 ]; then
-    echo "no submissions for $id"
+# no matching user for all projects
+if [ "$user_match" -eq 0 ]; then
+    echo "no submissions for $user"
 fi

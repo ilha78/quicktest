@@ -12,23 +12,23 @@ quicktest_not_exist "quicktest-submit"
 
 # check invalid number of arguments
 if [ $# -ne 3 ]; then
-    echo "usage: quicktest-submit <assignment> <id> <filename>" >&2
+    echo "usage: quicktest-submit <project> <user> <filename>" >&2
     exit 1
 fi
 
-assignment="$1"
-id="$2"
+project="$1"
+user="$2"
 filename="$3"
 
-# check invalid assignment
-if ! echo "$assignment" | grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
-    echo "quicktest-submit: invalid assignment: $assignment" >&2
+# check invalid project
+if ! echo "$project" | grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
+    echo "quicktest-submit: invalid project: $project" >&2
     exit 1
 fi
 
-# check invalid id
-if ! echo "$id" | grep -E '^z[0-9]{7}$' >/dev/null; then
-    echo "quicktest-submit: invalid id: $id" >&2
+# check invalid user
+if ! echo "$user" | grep -E "^[^_].*" >/dev/null; then
+    echo "quicktest-submit: invalid user: $user" >&2
     exit 1
 fi
 
@@ -38,22 +38,22 @@ if ! echo "$filename" | grep -E '^[a-zA-Z0-9_./-]+$' >/dev/null; then
     exit 1
 fi
 
-# check if assignment can be found as a directory
-if ! [ -d ".quicktest/$assignment" ]; then
-    echo "quicktest-submit: assignment $assignment not found" >&2
+# check if project can be found as a directory
+if ! [ -d ".quicktest/$project" ]; then
+    echo "quicktest-submit: project $project not found" >&2
     exit 1
 fi
 
 valid_file_check "$filename" "quicktest-submit"
 
 # create a valid quicktest-submit
-if ! [ -d ".quicktest/$assignment/$id" ]; then
-    mkdir ".quicktest/$assignment/$id"
+if ! [ -d ".quicktest/$project/$user" ]; then
+    mkdir ".quicktest/$project/$user"
 fi
 # find the nth number of submission that will be created
-submission_num="$(find ".quicktest/$assignment/$id" -type d | wc -l)" 
-mkdir ".quicktest/$assignment/$id/$submission_num"
-cp "$filename" ".quicktest/$assignment/$id/$submission_num"
+submission_num="$(find ".quicktest/$project/$user" -type d | wc -l)" 
+mkdir ".quicktest/$project/$user/$submission_num"
+cp "$filename" ".quicktest/$project/$user/$submission_num"
 
 # create timestamp
 curr_time="$(date "+%c")"
@@ -63,7 +63,7 @@ sed -E 's/([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*) ([^ ]*)$/\1 \3 \2 \5 \4/' |
 sed -E 's/([a-zA-Z]{3} [a-zA-Z]{3} )0([1-9])/\1 \2/')"
 
 # insert formatted time into @TIMESTAMP
-echo "$format_time" >".quicktest/$assignment/$id/$submission_num/@TIMESTAMP"
+echo "$format_time" >".quicktest/$project/$user/$submission_num/@TIMESTAMP"
 bytes="$(wc -c "$filename"|cut -d ' ' -f1,1)"
 filename="$(echo "$filename" | rev | cut -d '/' -f1,1 | rev)"
 

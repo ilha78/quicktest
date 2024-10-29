@@ -8,21 +8,21 @@ PATH="$PATH:$(pwd)"
 
 quicktest_not_exist "quicktest-summary"
 
-# loop through the assignments
-# use find with mindepth maxdepth to count unique version dirs
-for assignment in .quicktest/*; do
-    # all assignments should be directories
+# loop through the projects
+# use find with mindepth maxdepth to count unique user dirs
+for project in .quicktest/*; do
+    # all projects should be directories
     # so if we encounter a non-directory then
-    # this means that these is no assignment
-    if ! [ -d "$assignment" ]
+    # this means that these is no project
+    if ! [ -d "$project" ]
     then
-        echo "no assignments"
+        echo "no projects"
         exit 0
     fi
-    assignment_name="$(echo "$assignment" | cut -d '/' -f2,2)"
-    num_versions="$(find "$assignment" -mindepth 1 -maxdepth 1 -type d | 
+    project_name="$(echo "$project" | cut -d '/' -f2,2)"
+    num_users="$(find "$project" -mindepth 1 -maxdepth 1 -type d | 
         cut -d '/' -f3,3 | 
-        grep -Ec 'z[0-9]{7}')"
+        grep -Ec "^[^_].*")"
 
-    echo "assignment $assignment_name: submissions from $num_versions versions"  
+    echo "project $project_name: submissions from $num_users users"  
 done

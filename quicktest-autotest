@@ -9,16 +9,16 @@ PATH="$PATH:$(pwd)"
 # These are the elementary error checks before 
 # validity checks of _AUTOTESTS
 setup_error_checks() {
-    assignment="$1"
+    project="$1"
     filename="$2"
     num_args="$3"
     if [ "$num_args" -ne 2 ]; then
-        echo "usage: quicktest-autotest <assignment> <filename>" >&2
+        echo "usage: quicktest-autotest <project> <filename>" >&2
         exit 1
     fi
-    # check invalid assignment
-    if ! echo "$assignment"|grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
-        echo "quicktest-autotest: invalid assignment: $assignment" >&2
+    # check invalid project
+    if ! echo "$project"|grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
+        echo "quicktest-autotest: invalid project: $project" >&2
         exit 1
     fi
 
@@ -46,9 +46,9 @@ setup_error_checks() {
         exit 1
     fi
 
-    # check valid assignment directory
-    if ! [ -d ".quicktest/$assignment" ]; then
-        echo "quicktest-autotest: assignment $assignment not found" >&2
+    # check valid project directory
+    if ! [ -d ".quicktest/$project" ]; then
+        echo "quicktest-autotest: project $project not found" >&2
         exit 1
     fi
 
@@ -57,13 +57,13 @@ setup_error_checks() {
 # from helpers.sh to check if .quicktest exists or not
 quicktest_not_exist "quicktest-autotest"
 
-assignment="$1"
+project="$1"
 filename="$2"
 num_args="$#"
-setup_error_checks "$assignment" "$filename" "$num_args"
+setup_error_checks "$project" "$filename" "$num_args"
 
-autotests="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1|grep -E "_AUTOTESTS")"
-solution="$(find ".quicktest/$assignment/_SOLUTION" -mindepth 1 -maxdepth 1)"
+autotests="$(find ".quicktest/$project" -mindepth 1 -maxdepth 1|grep -E "_AUTOTESTS")"
+solution="$(find ".quicktest/$project/_SOLUTION" -mindepth 1 -maxdepth 1)"
 
 # add backslashes
 edit_autotests="$(mktemp)"
@@ -95,7 +95,7 @@ while read -r line; do
     echo "$stdin" | ./"$solution" $arguments 1>"$exp_stdout" 2>"$exp_stderr"
     exp_exit_status=$?
 
-    # actual (version) solution
+    # actual (user) solution
     echo "$stdin" | ./"$filename" $arguments 1>"$act_stdout" 2>"$act_stderr"
     act_exit_status=$?
 

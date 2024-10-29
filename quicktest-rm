@@ -9,23 +9,23 @@ PATH="$PATH:$(pwd)"
 quicktest_not_exist "quicktest-rm"
 
 if [ $# -ne 1 ]; then
-    echo "usage: quicktest-rm <assignment>" >&2
+    echo "usage: quicktest-rm <project>" >&2
     exit 1
 fi
 
-assignment="$1"
+project="$1"
 
-# check invalid assignment
-if ! echo "$assignment" | grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
-    echo "quicktest-rm: invalid assignment: $assignment" >&2
+# check invalid project
+if ! echo "$project" | grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
+    echo "quicktest-rm: invalid project: $project" >&2
     exit 1
 fi
 
-# check assignment exists
-if ! [ -d ".quicktest/$assignment" ]; then
-    echo "quicktest-rm: assignment $assignment not found" >&2
+# check project exists
+if ! [ -d ".quicktest/$project" ]; then
+    echo "quicktest-rm: project $project not found" >&2
     exit 1
 fi
 
-rm -rf ".quicktest/$assignment"
-echo "assignment $assignment removed"
+rm -rf ".quicktest/$project"
+echo "project $project removed"
