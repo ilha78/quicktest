@@ -1,6 +1,6 @@
 # QuickTest: A minimal workspace to validate your scripts
 
-This project was written using multiple bash scripts for a project.
+This project was written by multiple bash scripts.
 
 ## Setup
 
