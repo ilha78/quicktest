@@ -1,6 +1,6 @@
 # QuickTest: A minimal workspace to validate your scripts
 
-This project was written using bash scripts.
+This project was written using bash.
 
 ## Setup
 
