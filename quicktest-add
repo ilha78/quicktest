@@ -9,18 +9,18 @@ PATH="$PATH:$(pwd)"
 # check invalid number of arguments
 if [ "$#" -ne 4 ]
 then
-    echo "usage: quicktest-add <assignment> <solution> <autotests> <automarking>" >&2
+    echo "usage: quicktest-add <project> <solution> <autotests> <automarking>" >&2
     exit 1
 fi
 
-assignment="$1"
+project="$1"
 solution="$2"
 autotests="$3"
 automarking="$4"
 
-# check invalid assignment name
-if ! echo "$assignment" | grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
-    echo "quicktest-add: invalid assignment: $assignment" >&2
+# check invalid project name
+if ! echo "$project" | grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
+    echo "quicktest-add: invalid project: $project" >&2
     exit 1
 fi
 
@@ -36,9 +36,9 @@ if ! [ -d ".quicktest" ]; then
     echo "directory .quicktest created"
 fi
 
-# check <assignment> already exists
-if [ -d ".quicktest/$assignment" ]; then
-    echo "quicktest-add: assignment $assignment already exists" >&2
+# check <project> already exists
+if [ -d ".quicktest/$project" ]; then
+    echo "quicktest-add: project $project already exists" >&2
     exit 1
 fi
 
@@ -60,10 +60,10 @@ automarking_error_checks "$automarking" "$edit_automarking"
 rm -f "$edit_automarking"
 
 ### create a valid quicktest-add
-mkdir ".quicktest/$assignment"
-mkdir ".quicktest/$assignment/_SOLUTION"
-cp "$solution" ".quicktest/$assignment/_SOLUTION"
-cp "$autotests" ".quicktest/$assignment/_AUTOTESTS"
-cp "$automarking" ".quicktest/$assignment/_AUTOMARKING"
+mkdir ".quicktest/$project"
+mkdir ".quicktest/$project/_SOLUTION"
+cp "$solution" ".quicktest/$project/_SOLUTION"
+cp "$autotests" ".quicktest/$project/_AUTOTESTS"
+cp "$automarking" ".quicktest/$project/_AUTOMARKING"
 
-echo "assignment $assignment created"
+echo "project $project created"
