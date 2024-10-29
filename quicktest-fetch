@@ -1,41 +1,37 @@
-#!/bin/dash
-
-# This will show the contents of a submission by <zid>
-# on <assignment>. The optional [n] will determine
-# the nth solution where n=0 is the latest submission.
+#!/bin/bash
 
 PATH="$PATH:$(pwd)"
 
 # NOTE: this file contains all helper functions
-# which are used across different give scripts
+# which are used across different quicktest scripts
 . helpers.sh
 
-give_not_exist "give-fetch"
+quicktest_not_exist "quicktest-fetch"
 
 # number of args have to be 2 or 3
 if [ $# -ne 2 ] && [ $# -ne 3 ]; then
-    echo "usage: give-fetch <assignment> <zid> [n]" >&2
+    echo "usage: quicktest-fetch <assignment> <id> [n]" >&2
     exit 1
 fi
 
 assignment="$1"
-zid="$2"
+id="$2"
 
 # check invalid assignment
 if ! echo "$assignment" | grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
-    echo "give-fetch: invalid assignment: $assignment" >&2
+    echo "quicktest-fetch: invalid assignment: $assignment" >&2
     exit 1
 fi
 
-# check invalid zid
-if ! echo "$zid" | grep -E '^z[0-9]{7}$' >/dev/null; then
-    echo "give-fetch: invalid zid: $zid" >&2
+# check invalid id
+if ! echo "$id" | grep -E '^z[0-9]{7}$' >/dev/null; then
+    echo "quicktest-fetch: invalid id: $id" >&2
     exit 1
 fi
 
 # check valid assignment directory
-if ! [ -d ".give/$assignment" ]; then
-    echo "give-fetch: assignment $assignment not found" >&2
+if ! [ -d ".quicktest/$assignment" ]; then
+    echo "quicktest-fetch: assignment $assignment not found" >&2
     exit 1
 fi
 
@@ -44,8 +40,8 @@ fi
 # e.g. if n=0, then total_submission - 0 = (total_submission)th
 # e.g. if n=-1, then total_submission + (-1) = (total_submission-1)th = 2nd last submission
 # if n is positive then just use that nth submission
-student="$(find ".give/$assignment" -mindepth 1 -maxdepth 1 -type d | grep -E "$zid")" 2>/dev/null
-num_submissions="$(find "$student" -mindepth 1 -maxdepth 1 -type d | wc -l)" 2>/dev/null
+version="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1 -type d | grep -E "$id")" 2>/dev/null
+num_submissions="$(find "$version" -mindepth 1 -maxdepth 1 -type d | wc -l)" 2>/dev/null
 
 n=0
 if [ $# -eq 3 ]; then
@@ -53,13 +49,13 @@ if [ $# -eq 3 ]; then
 fi
 
 if [ "$n" -gt "$num_submissions" ] || [ "$n" -le $((-num_submissions)) ]; then
-    echo "give-fetch: submission $n not found for $assignment" >&2
+    echo "quicktest-fetch: submission $n not found for $assignment" >&2
     exit 1
 fi
 
 if [ "$n" -le 0 ]; then
     n=$((n+num_submissions))
 fi
-get_submission="$(find "$student" -mindepth 1 -maxdepth 1 -type d|sort -n|head -"$n"|tail -1)" 2>/dev/null
+get_submission="$(find "$version" -mindepth 1 -maxdepth 1 -type d|sort -n|head -"$n"|tail -1)" 2>/dev/null
 file="$(find "$get_submission" -mindepth 1 -maxdepth 1|grep -Ev '@TIMESTAMP')" 2>/dev/null
 cat "$file"

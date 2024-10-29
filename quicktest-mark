@@ -1,13 +1,9 @@
-#!/bin/dash
-
-# This is my implementation of automarking the output of
-# a student's most recent submission against the output of 
-# the solution of an <assignment> and assigns a mark
+#!/bin/bash
 
 PATH="$PATH:$(pwd)"
 
 # NOTE: this file contains all helper functions
-# which are used across different give scripts
+# which are used across different quicktest scripts
 . helpers.sh
 
 # These are the elementary error checks before 
@@ -16,23 +12,23 @@ setup_error_checks() {
     assignment="$1"
     num_args="$2"
     if [ "$num_args" -ne 1 ]; then
-        echo "usage: give-mark <assignment>" >&2
+        echo "usage: quicktest-mark <assignment>" >&2
         exit 1
     fi
     # check invalid assignment
     if ! echo "$assignment"|grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
-        echo "give-mark: invalid assignment: $assignment" >&2
+        echo "quicktest-mark: invalid assignment: $assignment" >&2
         exit 1
     fi
 
     # check valid assignment directory
-    if ! [ -d ".give/$assignment" ]; then
-        echo "give-mark: assignment $assignment not found" >&2
+    if ! [ -d ".quicktest/$assignment" ]; then
+        echo "quicktest-mark: assignment $assignment not found" >&2
         exit 1
     fi
 }
 
-# This function runs individual student's submission against
+# This function runs individual version's submission against
 # assignment's solution and works out the cumulative marks
 run_automarking() {
     automarking="$1"
@@ -73,7 +69,7 @@ run_automarking() {
         echo "$stdin" | ./"$solution" $arguments 1>"$exp_stdout" 2>"$exp_stderr"
         exp_exit_status=$?
 
-        # actual (student) solution
+        # actual (version) solution
         echo "$stdin" | ./"$filename" $arguments 1>"$act_stdout" 2>"$act_stderr"
         act_exit_status=$?
 
@@ -154,22 +150,22 @@ run_automarking() {
 }
 
 # Main function
-# from helpers.sh to check if .give exists or not
-give_not_exist "give-mark"
+# from helpers.sh to check if .quicktest exists or not
+quicktest_not_exist "quicktest-mark"
 
 assignment="$1"
 num_args="$#"
 setup_error_checks "$assignment" "$num_args"
 
-automarking="$(find ".give/$assignment" -mindepth 1 -maxdepth 1|grep -E "_AUTOMARKING")" 2>/dev/null
-solution="$(find ".give/$assignment/_SOLUTION" -mindepth 1 -maxdepth 1)" 2>/dev/null
-students="$(find ".give/$assignment" -mindepth 1 -maxdepth 1 -type d|grep -E 'z[0-9]{7}'|sort -n)" 2>/dev/null
+automarking="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1|grep -E "_AUTOMARKING")" 2>/dev/null
+solution="$(find ".quicktest/$assignment/_SOLUTION" -mindepth 1 -maxdepth 1)" 2>/dev/null
+versions="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1 -type d|grep -E 'z[0-9]{7}'|sort -n)" 2>/dev/null
 
-# find the most recent submission for each student in <assignment>
-echo "$students" | while read -r student; do
-    last_submission="$(find "$student" -mindepth 1 -maxdepth 1 -type d|sort -n|tail -1)" 2>/dev/null
+# find the most recent submission for each version in <assignment>
+echo "$versions" | while read -r version; do
+    last_submission="$(find "$version" -mindepth 1 -maxdepth 1 -type d|sort -n|tail -1)" 2>/dev/null
     submission_num="$(echo "$last_submission"|cut -d '/' -f4,4)" 
-    zid="$(echo "$student"|cut -d '/' -f3,3)"
+    id="$(echo "$version"|cut -d '/' -f3,3)"
 
     # retrieve all file information
     file="$(find "$last_submission" -mindepth 1 -maxdepth 1|grep -Ev '@TIMESTAMP')" 2>/dev/null
@@ -178,9 +174,9 @@ echo "$students" | while read -r student; do
     timestamp="$(find "$last_submission" -mindepth 1 -maxdepth 1|grep -E '@TIMESTAMP')" 2>/dev/null
     print_timestamp="$(cat "$timestamp")"
 
-    echo "*** Student $zid - submission $submission_num: $filename $file_size bytes @ $print_timestamp"
+    echo "*** version $id - submission $submission_num: $filename $file_size bytes @ $print_timestamp"
 
-    # run the automarking for the most recent file of the student
+    # run the automarking for the most recent file of the version
     run_automarking "$automarking" "$file"
 done
 

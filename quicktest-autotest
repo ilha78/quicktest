@@ -1,12 +1,9 @@
-#!/bin/dash
-
-# This is my implementation of autotesting the output of <filename>
-# against the output of the solution of an <assignment>
+#!/bin/bash
 
 PATH="$PATH:$(pwd)"
 
 # NOTE: this file contains all helper functions
-# which are used across different give scripts
+# which are used across different quicktest scripts
 . helpers.sh
 
 # These are the elementary error checks before 
@@ -16,24 +13,24 @@ setup_error_checks() {
     filename="$2"
     num_args="$3"
     if [ "$num_args" -ne 2 ]; then
-        echo "usage: give-autotest <assignment> <filename>" >&2
+        echo "usage: quicktest-autotest <assignment> <filename>" >&2
         exit 1
     fi
     # check invalid assignment
     if ! echo "$assignment"|grep -E '^[a-z]+[a-zA-Z0-9_]*$' >/dev/null; then
-        echo "give-autotest: invalid assignment: $assignment" >&2
+        echo "quicktest-autotest: invalid assignment: $assignment" >&2
         exit 1
     fi
 
     # check invalid filename
     if ! echo "$filename"|grep -E '^[a-zA-Z0-9_./-]+$' >/dev/null; then
-        echo "give-autotest: invalid filename: $filename" >&2
+        echo "quicktest-autotest: invalid filename: $filename" >&2
         exit 1
     fi
 
     # check filename exists
     if ! [ -e "$filename" ]; then
-        echo "give-autotest: $filename not found" >&2
+        echo "quicktest-autotest: $filename not found" >&2
         exit 1
     fi
     # check file is executable
@@ -45,28 +42,28 @@ setup_error_checks() {
 
     # check filename is a directory
     if [ -d "$filename" ]; then
-        echo "give-submit: $filename: Is a directory" >&2
+        echo "quicktest-submit: $filename: Is a directory" >&2
         exit 1
     fi
 
     # check valid assignment directory
-    if ! [ -d ".give/$assignment" ]; then
-        echo "give-autotest: assignment $assignment not found" >&2
+    if ! [ -d ".quicktest/$assignment" ]; then
+        echo "quicktest-autotest: assignment $assignment not found" >&2
         exit 1
     fi
 
 }
 
-# from helpers.sh to check if .give exists or not
-give_not_exist "give-autotest"
+# from helpers.sh to check if .quicktest exists or not
+quicktest_not_exist "quicktest-autotest"
 
 assignment="$1"
 filename="$2"
 num_args="$#"
 setup_error_checks "$assignment" "$filename" "$num_args"
 
-autotests="$(find ".give/$assignment" -mindepth 1 -maxdepth 1|grep -E "_AUTOTESTS")"
-solution="$(find ".give/$assignment/_SOLUTION" -mindepth 1 -maxdepth 1)"
+autotests="$(find ".quicktest/$assignment" -mindepth 1 -maxdepth 1|grep -E "_AUTOTESTS")"
+solution="$(find ".quicktest/$assignment/_SOLUTION" -mindepth 1 -maxdepth 1)"
 
 # add backslashes
 edit_autotests="$(mktemp)"
@@ -98,7 +95,7 @@ while read -r line; do
     echo "$stdin" | ./"$solution" $arguments 1>"$exp_stdout" 2>"$exp_stderr"
     exp_exit_status=$?
 
-    # actual (student) solution
+    # actual (version) solution
     echo "$stdin" | ./"$filename" $arguments 1>"$act_stdout" 2>"$act_stderr"
     act_exit_status=$?
 
